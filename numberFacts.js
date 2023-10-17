@@ -16,21 +16,17 @@ async function showNumberTrivia(number) {
 
 }
 
+/** Maps numbers to array of promises, then  */
 async function showNumberRace(numbers) {
 
-    const trivia_requests = [];
+    numbers.map(number => fetch(`${API_BASE_URL}/${number}?json`));
 
-    for (const number of numbers) {
-      const response = await fetch(`${API_BASE_URL}/${number}?json`);
+    const raceWinner = await Promise.race(numbers);
+    const winnerResponse = await raceWinner.json();
 
-      const data = await response.json();
-      trivia_requests.push(data['text']);
-    }
+    console.log("showNumberrace:",winnerResponse);
 
-    const raceWinner = await Promise.race(trivia_requests);
-    console.log("showNumberrace:",raceWinner);
-    return raceWinner
-
+    return raceWinner;
 
 }
 
@@ -52,7 +48,7 @@ async function showNumberAll(numbers){
 
 
     if (result.value['status'] !== 200){
-      failures.push(`Request failed with status code ${result.value['status']}`)
+      failures.push(`Request failed with status code ${result.value.status}`)
     }
     else{
       const data = await result.value.json()
