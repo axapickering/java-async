@@ -16,52 +16,51 @@ async function showNumberTrivia(number) {
 
 }
 
-/** Maps numbers to array of promises, then  */
+/** Takes in array of numbers
+ * Maps numbers to array of promises, then wait for first promise to finish
+ * display the fact associated with the first finisehd
+*/
 async function showNumberRace(numbers) {
 
-    numbers.map(number => fetch(`${API_BASE_URL}/${number}?json`));
+    let promises = numbers.map(number => fetch(`${API_BASE_URL}/${number}?json`));
 
-    const raceWinner = await Promise.race(numbers);
+
+    const raceWinner = await Promise.race(promises);
+
     const winnerResponse = await raceWinner.json();
 
-    console.log("showNumberrace:",winnerResponse);
+    console.log("showNumberrace:",winnerResponse.text);
 
     return raceWinner;
 
 }
 
 async function showNumberAll(numbers){
-  const trivia_requests = [];
 
-  for (const number of numbers) {
-    const response = await fetch(`${API_BASE_URL}/${number}?json`);
+  let promises = numbers.map(number => fetch(`${API_BASE_URL}/${number}?json`));
 
-    trivia_requests.push(response);
-  }
+  const results = await Promise.allSettled(promises);
 
-  const results = await Promise.allSettled(trivia_requests);
+  const successPromises = results
+    .filter(r => r.status === "fulfilled" && r.value.ok === true)
+    .map(response => response.value.json())
 
-  let successes = [];
-  let failures = [];
+  const successes = await Promise.all(successPromises)
 
-  for (let result of results){
+  const facts = successes.map(fact => fact.text)
+
+  const failures = results
+    .filter(r => r.status === "fulfilled" && r.value.ok === false)
+    .map(promise => promise.value)
 
 
-    if (result.value['status'] !== 200){
-      failures.push(`Request failed with status code ${result.value.status}`)
-    }
-    else{
-      const data = await result.value.json()
-      successes.push(data['text'])
-    }
-  }
-  console.log("showNumberAll fulfulled:",successes)
+  console.log("showNumberAll fulfulled:", facts)
   console.log("showNumberAll rejected:", failures)
 
   return {Success: successes, Failures: failures}
 }
 
-async function main(){
+async function conductor(){
   // const random_number = _.random(1, 100)
 //   let randomNumbers = Array(10) ;
 //   randomNumbers.fill(random_number)
